@@ -10,9 +10,9 @@ class CPU:
         
         # Instructions
         self.instructions = {
-            0b10000010: 'LDI', # Set the value of a register to an integer
-            0b01000111: 'PRN', # Print numeric value stored in the given register
-            0b00000001: 'HLT'  # Halt the CPU (and exit the emulator)        
+            0b10000010: 'LDI', # Load Immediate
+            0b01000111: 'PRN', # Print
+            0b00000001: 'HLT'  # Halt     
         }
         
         # Program Counter (pc)
@@ -55,15 +55,15 @@ class CPU:
         else:
             raise Exception("Unsupported ALU operation")
         
-    def hlt(self):
+    def hlt(self): # Halt the CPU (and exit the emulator) 
         return False
 
-    def ldi(self, register, value):
+    def ldi(self, register, value): # Set the value of a register to an integer
         self.ram_write(register, value)
         self.pc += 3
         
-    def prn(self, register):
-        self.ram_read(register)
+    def prn(self, register): # Print numeric value stored in the given register to console
+        print(self.ram_read(register))
         self.pc += 2
         
     def trace(self):
@@ -98,11 +98,11 @@ class CPU:
         while running:
             
             # Instruction register (ir)
-            ir = self.ram_read[self.pc]  
+            ir = self.ram[self.pc]  
             
             # Next 2 registers (in case the instruction requires them)          
-            operand_a = self.ram_read[self.pc+1]
-            operand_b = self.ram_read[self.pc+2]
+            operand_a = self.ram[self.pc+1]
+            operand_b = self.ram[self.pc+2]
             
             instruction = self.instructions[ir]
             
