@@ -7,8 +7,21 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
+        
+        # Operation codes 
+        self.opcodes = {
+            0b10000010: self.ldi, # Set the value of a register to an integer
+            0b01000111: self.prn, # Print numeric value stored in the given register
+            0b00000001: self.hlt  # Halt the CPU (and exit the emulator)        
+        }
+        
+        # Program Counter (pc)
         self.pc = 0
+         
+        # Random Access Memory, 256 bytes (ram)
         self.ram = [0] * 256
+        
+        # Registers, 8 bytes (reg)
         self.reg = [0] * 8
     
     def load(self):
@@ -62,12 +75,20 @@ class CPU:
 
         print()
         
-    def ram_read(self, memory_address_register):
-        return self.ram[memory_address_register]
+    def ram_read(self,mar): # mar = memory address register
+        return self.ram[mar]
     
-    def ram_write(self, memory_address_register, memory_data_register):
-        self.ram[memory_address_register] = memory_data_register
+    def ram_write(self, mar, mdr): # mdr = memory data register
+        self.ram[mar] = mdr
 
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+        while running:
+            # Instruction register (ir)
+            ir = self.ram_read[self.pc]
+            
+            operand_a = self.ram_read[self.pc+1]
+            operand_b = self.ram_read[self.pc+2]
+            
+            
