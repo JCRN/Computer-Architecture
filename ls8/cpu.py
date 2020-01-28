@@ -10,9 +10,14 @@ class CPU:
         
         # Instructions
         self.instructions = {
+            0b10100000: 'ADD', # Add
+            0b10101000: 'AND', # Bitwise-AND
+            0b10100011: 'DIV', # Divide
+            0b00000001: 'HLT', # Halt
             0b10000010: 'LDI', # Load Immediate
+            0b10100010: 'MUL', # Multiply     
             0b01000111: 'PRN', # Print
-            0b00000001: 'HLT'  # Halt     
+            0b10100001: 'SUB'  # Subtract
         }
         
         # Program Counter (pc)
@@ -30,20 +35,17 @@ class CPU:
         if len(sys.argv) != 2:
             print('Usage: file.py filename', file=sys.stderr)
             sys.exit(2)
-        else:
-            filename = sys.argv[1]
             
         try:
             address = 0
             
-            with open(filename) as program:
-                for instruction in program:                    
+            with open(sys.argv[1]) as file:
+                for line in file:                    
                     comment_split = line.split('#')  # Ignore comments                  
-                    num = comment_split[0].strip()   # Strip out whitespace                 
-                    if num == '':
-                        continue                     # Ignore blank lines
-                    instruction = int(num, 2)        # Cast to binary integer                    
-                    self.ram[address] = instruction
+                    instruction = comment_split[0].strip()   # Strip out whitespace                 
+                    if instruction == '':                    # Ignore blank lines
+                        continue                     
+                    self.ram_write(address, int(instruction[:8], 2))
                     address += 1
         
         except FileNotFoundError:
@@ -53,13 +55,15 @@ class CPU:
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-
+        
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "SUB": 
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
+            self.ram[reg_a] *= self.ram[reg_b]
+        elif op == "DIV":
+            self.reg[reg_a] /= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
         
@@ -105,6 +109,8 @@ class CPU:
         running = True
         while running:
             
+            # self.trace()
+            
             # Instruction register (ir)
             ir = self.ram[self.pc]  
             
@@ -114,14 +120,21 @@ class CPU:
             
             instruction = self.instructions[ir]
             
-            if instruction == 'LDI':
+            if instruction == 'HLT':
+                running = self.hlt()   
+            
+            elif instruction == 'LDI':
+                print(f'Loading {operand_b} into register {operand_a}')
                 self.ldi(operand_a, operand_b)
             
+            elif instruction == 'MUL':
+                print(f'Multiplying {self.ram[operand_a]} and {self.ram[operand_b]}')
+                self.alu(instruction, operand_a, operand_b) 
+                self.pc += 3
+            
             elif instruction == 'PRN':
-                self.prn(operand_a)
-                
-            elif instruction == 'HLT':
-                running = self.hlt()    
+                print(f'Printing {self.ram[operand_a]}')
+                self.prn(operand_a)        
             
             else:
                 print(f'Command not found.')
