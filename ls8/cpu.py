@@ -24,12 +24,14 @@ class CPU:
         # Registers, 8 bytes (reg)
         self.reg = [0] * 8
     
-    def load(self, filename):
+    def load(self):
         """Load a program into memory."""
         
         if len(sys.argv) != 2:
             print('Usage: file.py filename', file=sys.stderr)
             sys.exit(2)
+        else:
+            filename = sys.argv[1]
             
         try:
             address = 0
@@ -49,13 +51,15 @@ class CPU:
             sys.exit(2)
 
 
-
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "SUB": 
+            self.reg[reg_a] += self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
         
