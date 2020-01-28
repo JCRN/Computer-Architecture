@@ -8,11 +8,11 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         
-        # Operation codes 
-        self.opcodes = {
-            0b10000010: self.ldi, # Set the value of a register to an integer
-            0b01000111: self.prn, # Print numeric value stored in the given register
-            0b00000001: self.hlt  # Halt the CPU (and exit the emulator)        
+        # Instructions
+        self.instructions = {
+            0b10000010: 'LDI', # Set the value of a register to an integer
+            0b01000111: 'PRN', # Print numeric value stored in the given register
+            0b00000001: 'HLT'  # Halt the CPU (and exit the emulator)        
         }
         
         # Program Counter (pc)
@@ -54,7 +54,18 @@ class CPU:
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
+        
+    def hlt(self):
+        return False
 
+    def ldi(self, register, value):
+        self.ram_write(register, value)
+        self.pc += 3
+        
+    def prn(self, register):
+        self.ram_read(register)
+        self.pc += 2
+        
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -75,20 +86,34 @@ class CPU:
 
         print()
         
-    def ram_read(self,mar): # mar = memory address register
+    def ram_read(self, mar): # memory address register - contains the address that is being read or written to
         return self.ram[mar]
     
-    def ram_write(self, mar, mdr): # mdr = memory data register
+    def ram_write(self, mar, mdr): # memory data register - contains the data that was read or the data to write
         self.ram[mar] = mdr
 
     def run(self):
         """Run the CPU."""
         running = True
         while running:
-            # Instruction register (ir)
-            ir = self.ram_read[self.pc]
             
+            # Instruction register (ir)
+            ir = self.ram_read[self.pc]  
+            
+            # Next 2 registers (in case the instruction requires them)          
             operand_a = self.ram_read[self.pc+1]
             operand_b = self.ram_read[self.pc+2]
             
+            instruction = self.instructions[ir]
             
+            if instruction == 'LDI':
+                self.ldi(operand_a, operand_b)
+            
+            elif instruction == 'PRN':
+                self.prn(operand_a)
+                
+            elif instruction == 'HLT':
+                running = self.hlt()    
+            
+            else:
+                print(f'Command not found.')
