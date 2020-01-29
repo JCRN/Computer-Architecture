@@ -86,39 +86,39 @@ class CPU:
         """ALU operations."""
         
         if op == 'INC':
-            self.reg[reg_a] += 1
+            self.reg[reg_a] += 1 & 0xFF
         elif op == 'DEC':
-            self.reg[reg_a] -= 1
+            self.reg[reg_a] -= 1 & 0xFF
         elif op == 'NOT':
-            self.reg[reg_a] =  ~self.reg[reg_a]
+            self.reg[reg_a] =  ~self.reg[reg_a] & 0xFF
         elif op == 'ADD':
-            self.reg[reg_a] += self.reg[reg_b]
+            self.reg[reg_a] += self.reg[reg_b] & 0xFF
         elif op == 'SUB': 
-            self.reg[reg_a] += self.reg[reg_b]
+            self.reg[reg_a] += self.reg[reg_b] & 0xFF
         elif op == 'MUL':
-            self.reg[reg_a] *= self.reg[reg_b]
+            self.reg[reg_a] *= self.reg[reg_b] & 0xFF
         elif op == 'DIV':
             try:
-                self.reg[reg_a] /= self.reg[reg_b]
+                self.reg[reg_a] /= self.reg[reg_b] & 0xFF
             except ZeroDivisionError:
                 print('Error: dividing by zero!')
                 self.halt()
         elif op == 'MOD':
             try:
-                self.reg[reg_a] %= self.reg[reg_b]
+                self.reg[reg_a] %= self.reg[reg_b] & 0xFF
             except ZeroDivisionError:
                 print('Error: dividing by zero!')
                 self.halt() 
         elif op == 'AND':
-            self.reg[reg_a] &= self.reg[reg_b]
+            self.reg[reg_a] &= self.reg[reg_b] & 0xFF
         elif op == 'OR':
-            self.reg[reg_a] |= self.reg[reg_b]
+            self.reg[reg_a] |= self.reg[reg_b] & 0xFF
         elif op == 'XOR':
-            self.reg[reg_a] ^= self.reg[reg_b]
+            self.reg[reg_a] ^= self.reg[reg_b] & 0xFF
         elif op == 'SHL':
-            self.reg[reg_a] <<= self.reg[reg_b]
+            self.reg[reg_a] <<= self.reg[reg_b] & 0xFF
         elif op == 'SHR':
-            self.reg[reg_a] >>= self.reg[reg_b]
+            self.reg[reg_a] >>= self.reg[reg_b] & 0xFF
         else:
             raise Exception("Unsupported ALU operation")
         
