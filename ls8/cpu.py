@@ -82,7 +82,7 @@ class CPU:
             sys.exit(2)
 
 
-    def alu(self, op=None, reg_a=None, reg_b=None):
+    def alu(self, op, reg_a, reg_b=None):
         """ALU operations."""
         
         if op == 'INC':
