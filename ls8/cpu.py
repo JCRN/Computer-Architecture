@@ -49,7 +49,7 @@ class CPU:
         self.PC = 0    
         
         # Stack Pointer
-        self.SP = self.ram[0xF4]     
+        self.SP = 0xF4     
         
         # Reserved Registers
         self.reg[5] = self.IM # interrupt mask
@@ -90,7 +90,7 @@ class CPU:
         elif op == 'DEC':
             self.reg[reg_a] -= 1
         elif op == 'NOT':
-            self.reg[reg_a] ~= self.reg[reg_a]
+            self.reg[reg_a] =  ~self.reg[reg_a]
         elif op == 'ADD':
             self.reg[reg_a] += self.reg[reg_b]
         elif op == 'SUB': 
@@ -127,10 +127,10 @@ class CPU:
         
     def push(self, register): # Push the value in given register on the stack
         self.SP -= 1
-        self.ram_write(self.SP, register)
+        self.ram[self.SP] = self.reg[register]
         
     def pop(self, register):
-        self.reg[register] = self.ram_read(self.SP)
+        self.reg[register] = self.ram[self.SP]
         self.SP += 1        
 
     def prn(self, register): # Print numeric value stored in the given register to console
