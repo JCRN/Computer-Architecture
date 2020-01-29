@@ -8,17 +8,18 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         
-        # Instructions
-        self.instructions = {
-            0b10100000: 'ADD', # Add
-            0b10101000: 'AND', # Bitwise-AND
-            0b10100011: 'DIV', # Divide
-            0b00000001: 'HLT', # Halt
-            0b10000010: 'LDI', # Load Immediate
-            0b10100010: 'MUL', # Multiply     
-            0b01000111: 'PRN', # Print
-            0b10100001: 'SUB'  # Subtract
+        # branchtable of instructions
+        self.branchtable = {
+            # ALU 
+            160: 'ADD',   
+            162: 'MUL',        
+            # Commands
+            1: self.hlt, 
+            130: self.ldi,  
+            71: self.prn   
         }
+        
+        self.halt = False
         
         # Program Counter (pc)
         self.pc = 0
@@ -68,15 +69,13 @@ class CPU:
             raise Exception("Unsupported ALU operation")
         
     def hlt(self): # Halt the CPU (and exit the emulator) 
-        return False
+        self.halt = True
 
     def ldi(self, register, value): # Set the value of a register to an integer
         self.ram_write(register, value)
-        self.pc += 3
         
     def prn(self, register): # Print numeric value stored in the given register to console
         print(self.ram_read(register))
-        self.pc += 2
         
     def trace(self):
         """
@@ -106,35 +105,32 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        running = True
-        while running:
+
+        while not self.halt:
             
             # self.trace()
             
             # Instruction register (ir)
-            ir = self.ram[self.pc]  
+            ir = self.ram[self.pc] 
+                        
+            # instruction bits            
+            alu = ir & 0b00100000 # = 32 if ALU instruction
+            instruction = self.branchtable[ir] 
+            ops = ir >> 6
             
-            # Next 2 registers (in case the instruction requires them)          
-            operand_a = self.ram[self.pc+1]
-            operand_b = self.ram[self.pc+2]
+            operand_a = self.ram[self.pc+1] if (ops > 0) else None
+            operand_b = self.ram[self.pc+2] if (ops > 1) else None
             
-            instruction = self.instructions[ir]
-            
-            if instruction == 'HLT':
-                running = self.hlt()   
-            
-            elif instruction == 'LDI':
-                print(f'Loading {operand_b} into register {operand_a}')
-                self.ldi(operand_a, operand_b)
-            
-            elif instruction == 'MUL':
-                print(f'Multiplying {self.ram[operand_a]} and {self.ram[operand_b]}')
-                self.alu(instruction, operand_a, operand_b) 
-                self.pc += 3
-            
-            elif instruction == 'PRN':
-                print(f'Printing {self.ram[operand_a]}')
-                self.prn(operand_a)        
-            
+            if alu == 32:
+                self.alu(instruction, operand_a, operand_b)
+            elif ops == 1:
+                instruction(operand_a)
+            elif ops == 2:
+                instruction(operand_a, operand_b)
             else:
-                print(f'Command not found.')
+                instruction()
+                
+            self.pc += (ops+1)
+            
+            
+
