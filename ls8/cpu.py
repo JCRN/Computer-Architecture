@@ -39,13 +39,13 @@ class CPU:
         self.reg = [0] * 8
         
         ### Internal Registers ###
-        # Interrupt Mask (im)
+        # Interrupt Mask 
         self.IM = 0
         
-        # Interrupt Status (is)
+        # Interrupt Status 
         self.IS = 0
         
-        # Program Counter (pc)
+        # Program Counter 
         self.PC = 0    
         
         # Stack Pointer
@@ -85,40 +85,53 @@ class CPU:
     def alu(self, op, reg_a, reg_b=None):
         """ALU operations."""
         
-        if op == 'INC':
-            self.reg[reg_a] += 1 & 0xFF
-        elif op == 'DEC':
+        if op == 'INC':     # Increment given register by 1
+            self.reg[reg_a] += 1 & 0xFF                     
+        
+        elif op == 'DEC':   # Decrement given register by 1
             self.reg[reg_a] -= 1 & 0xFF
-        elif op == 'NOT':
+       
+        elif op == 'NOT':   # Perform a bitwise-NOT on the value in a register
             self.reg[reg_a] =  ~self.reg[reg_a] & 0xFF
-        elif op == 'ADD':
+        
+        elif op == 'ADD':   # Add the value in two registers and store the result in registerA
             self.reg[reg_a] += self.reg[reg_b] & 0xFF
-        elif op == 'SUB': 
-            self.reg[reg_a] += self.reg[reg_b] & 0xFF
-        elif op == 'MUL':
+        
+        elif op == 'SUB':   # Subtract the second register from the first, storing the result in registerA
+            self.reg[reg_a] -= self.reg[reg_b] & 0xFF
+       
+        elif op == 'MUL':   # Multiply the values in two registers together and store the result in registerA
             self.reg[reg_a] *= self.reg[reg_b] & 0xFF
-        elif op == 'DIV':
+        
+        elif op == 'DIV':   # Divide first register by the value in the second, storing the result in registerA
             try:
                 self.reg[reg_a] /= self.reg[reg_b] & 0xFF
             except ZeroDivisionError:
                 print('Error: dividing by zero!')
                 self.halt()
-        elif op == 'MOD':
+        
+        elif op == 'MOD': # Divide the first register by the value in the second, storing the remainder in registerA
             try:
                 self.reg[reg_a] %= self.reg[reg_b] & 0xFF
             except ZeroDivisionError:
                 print('Error: dividing by zero!')
                 self.halt() 
-        elif op == 'AND':
+        
+        elif op == 'AND':   # Bitwise-AND the values in registerA and registerB, storing the result in registerA
             self.reg[reg_a] &= self.reg[reg_b] & 0xFF
-        elif op == 'OR':
+       
+        elif op == 'OR':    # Bitwise-OR the values in registerA and registerB, storing the result in registerA
             self.reg[reg_a] |= self.reg[reg_b] & 0xFF
-        elif op == 'XOR':
+        
+        elif op == 'XOR':   # Bitwise-XOR the values in registerA and registerB, storing the result in registerA
             self.reg[reg_a] ^= self.reg[reg_b] & 0xFF
-        elif op == 'SHL':
+        
+        elif op == 'SHL':   # Shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0
             self.reg[reg_a] <<= self.reg[reg_b] & 0xFF
-        elif op == 'SHR':
+        
+        elif op == 'SHR':   # Shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0
             self.reg[reg_a] >>= self.reg[reg_b] & 0xFF
+        
         else:
             raise Exception("Unsupported ALU operation")
         
@@ -129,7 +142,7 @@ class CPU:
         self.SP -= 1
         self.ram[self.SP] = self.reg[register]
         
-    def pop(self, register):
+    def pop(self, register): # Pop the value at the top of the stack into the given register
         self.reg[register] = self.ram[self.SP]
         self.SP += 1        
 
