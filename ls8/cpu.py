@@ -25,9 +25,11 @@ class CPU:
             172: 'SHL',  
             173: 'SHR',  
             # Commands
-            1: self.hlt, 
-            130: self.ldi,  
-            71: self.prn   
+            1: self.hlt,
+            69: self.push, 
+            70: self.pop, 
+            71: self.prn,  
+            130: self.ldi, 
         }
         
         # Random Access Memory, 256 bytes (ram)
@@ -122,12 +124,20 @@ class CPU:
         
     def hlt(self): # Halt the CPU (and exit the emulator) 
         self.halt = True
-
-    def ldi(self, register, value): # Set the value of a register to an integer
-        self.reg[register] = value
         
+    def push(self, register): # Push the value in given register on the stack
+        self.SP -= 1
+        self.ram_write(self.SP, register)
+        
+    def pop(self, register):
+        self.reg[register] = self.ram_read(self.SP)
+        self.SP += 1        
+
     def prn(self, register): # Print numeric value stored in the given register to console
         print(self.reg[register])
+    
+    def ldi(self, register, value): # Set the value of a register to an integer
+        self.reg[register] = value        
         
     def trace(self):
         """
