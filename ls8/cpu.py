@@ -11,25 +11,51 @@ class CPU:
         # branchtable of instructions
         self.branchtable = {
             # ALU 
-            160: 'ADD',   
-            162: 'MUL',        
+            101: 'INC',
+            102: 'DEC',
+            105: 'NOT',
+            160: 'ADD',
+            161: 'SUB',   
+            162: 'MUL',
+            163: 'DIV',
+            164: 'MOD', 
+            168: 'AND', 
+            170: 'OR', 
+            171: 'XOR', 
+            172: 'SHL',  
+            173: 'SHR',  
             # Commands
             1: self.hlt, 
             130: self.ldi,  
             71: self.prn   
         }
         
-        self.halt = False
-        
-        # Program Counter (pc)
-        self.pc = 0
-         
         # Random Access Memory, 256 bytes (ram)
         self.ram = [0] * 256
         
         # Registers, 8 bytes (reg)
         self.reg = [0] * 8
+        
+        ### Internal Registers ###
+        # Interrupt Mask (im)
+        self.IM = 0
+        
+        # Interrupt Status (is)
+        self.IS = 0
+        
+        # Program Counter (pc)
+        self.PC = 0    
+        
+        # Stack Pointer
+        self.SP = self.ram[0xF4]     
+        
+        # Reserved Registers
+        self.reg[5] = self.IM # interrupt mask
+        self.reg[6] = self.IS # interrupt status
+        self.reg[7] = self.SP # stack pointer
     
+        self.halt = False
+        
     def load(self):
         """Load a program into memory."""
         
@@ -54,17 +80,43 @@ class CPU:
             sys.exit(2)
 
 
-    def alu(self, op, reg_a, reg_b):
+    def alu(self, op=None, reg_a=None, reg_b=None):
         """ALU operations."""
         
-        if op == "ADD":
+        if op == 'INC':
+            self.reg[reg_a] += 1
+        elif op == 'DEC':
+            self.reg[reg_a] -= 1
+        elif op == 'NOT':
+            self.reg[reg_a] ~= self.reg[reg_a]
+        elif op == 'ADD':
             self.reg[reg_a] += self.reg[reg_b]
-        elif op == "SUB": 
+        elif op == 'SUB': 
             self.reg[reg_a] += self.reg[reg_b]
-        elif op == "MUL":
-            self.ram[reg_a] *= self.ram[reg_b]
-        elif op == "DIV":
-            self.reg[reg_a] /= self.reg[reg_b]
+        elif op == 'MUL':
+            self.reg[reg_a] *= self.reg[reg_b]
+        elif op == 'DIV':
+            try:
+                self.reg[reg_a] /= self.reg[reg_b]
+            except ZeroDivisionError:
+                print('Error: dividing by zero!')
+                self.halt()
+        elif op == 'MOD':
+            try:
+                self.reg[reg_a] %= self.reg[reg_b]
+            except ZeroDivisionError:
+                print('Error: dividing by zero!')
+                self.halt() 
+        elif op == 'AND':
+            self.reg[reg_a] &= self.reg[reg_b]
+        elif op == 'OR':
+            self.reg[reg_a] |= self.reg[reg_b]
+        elif op == 'XOR':
+            self.reg[reg_a] ^= self.reg[reg_b]
+        elif op == 'SHL':
+            self.reg[reg_a] <<= self.reg[reg_b]
+        elif op == 'SHR':
+            self.reg[reg_a] >>= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
         
@@ -72,10 +124,10 @@ class CPU:
         self.halt = True
 
     def ldi(self, register, value): # Set the value of a register to an integer
-        self.ram_write(register, value)
+        self.reg[register] = value
         
     def prn(self, register): # Print numeric value stored in the given register to console
-        print(self.ram_read(register))
+        print(self.reg[register])
         
     def trace(self):
         """
@@ -84,7 +136,7 @@ class CPU:
         """
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
+            self.PC,
             #self.fl,
             #self.ie,
             self.ram_read(self.pc),
@@ -111,15 +163,15 @@ class CPU:
             # self.trace()
             
             # Instruction register (ir)
-            ir = self.ram[self.pc] 
+            ir = self.ram[self.PC] 
                         
             # instruction bits            
-            alu = ir & 0b00100000 # = 32 if ALU instruction
+            alu = ir & 32 # bitmask, 32 if ALU instruction
             instruction = self.branchtable[ir] 
             ops = ir >> 6
             
-            operand_a = self.ram[self.pc+1] if (ops > 0) else None
-            operand_b = self.ram[self.pc+2] if (ops > 1) else None
+            operand_a = self.ram[self.PC+1] if (ops > 0) else None
+            operand_b = self.ram[self.PC+2] if (ops > 1) else None
             
             if alu == 32:
                 self.alu(instruction, operand_a, operand_b)
@@ -130,7 +182,7 @@ class CPU:
             else:
                 instruction()
                 
-            self.pc += (ops+1)
+            self.PC += (ops+1)
             
             
 
