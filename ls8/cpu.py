@@ -127,10 +127,10 @@ class CPU:
             self.reg[reg_a] ^= self.reg[reg_b] & 0xFF
         
         elif op == 'SHL':   # Shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0
-            self.reg[reg_a] <<= self.reg[reg_b] & 0xFF
+            self.reg[reg_a] <<= '{:08b}'.format(self.reg[reg_b]) & 0xFF
         
         elif op == 'SHR':   # Shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0
-            self.reg[reg_a] >>= self.reg[reg_b] & 0xFF
+            self.reg[reg_a] >>= '{:08b}'.format(self.reg[reg_b]) & 0xFF
         
         else:
             raise Exception("Unsupported ALU operation")
