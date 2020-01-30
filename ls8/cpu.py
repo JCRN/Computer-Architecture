@@ -26,9 +26,11 @@ class CPU:
             173: 'SHR',  
             # Commands
             1: self.hlt,
+            17: self.ret,
             69: self.push, 
             70: self.pop, 
-            71: self.prn,  
+            71: self.prn,
+            80: self.call,  
             130: self.ldi, 
         }
         
@@ -127,16 +129,20 @@ class CPU:
             self.reg[reg_a] ^= self.reg[reg_b] & 0xFF
         
         elif op == 'SHL':   # Shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0
-            self.reg[reg_a] <<= '{:08b}'.format(self.reg[reg_b]) & 0xFF
+            self.reg[reg_a] <<= self.reg[reg_b] & 0xFF
         
         elif op == 'SHR':   # Shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0
-            self.reg[reg_a] >>= '{:08b}'.format(self.reg[reg_b]) & 0xFF
+            self.reg[reg_a] >>= self.reg[reg_b] & 0xFF
         
         else:
             raise Exception("Unsupported ALU operation")
         
     def hlt(self): # Halt the CPU (and exit the emulator) 
         self.halt = True
+        
+    def ret(self): # Pop the value from the top of the stack and store it in the `PC`
+        self.PC = self.ram[self.SP]
+        self.SP += 1
         
     def push(self, register): # Push the value in given register on the stack
         self.SP -= 1
@@ -148,7 +154,14 @@ class CPU:
 
     def prn(self, register): # Print numeric value stored in the given register to console
         print(self.reg[register])
-    
+        
+    def call(self, register): #  Calls a subroutine (function) at the address stored in the register
+        # push return address on stack
+        self.SP -= 1
+        self.ram[self.SP] = self.PC + 2        
+        
+        self.PC = self.reg[register] # set the PC to the value in the register
+            
     def ldi(self, register, value): # Set the value of a register to an integer
         self.reg[register] = value        
         
@@ -205,7 +218,8 @@ class CPU:
             else:
                 instruction()
                 
-            self.PC += (ops+1)
+            if ir & 16 == 0:
+                self.PC += (ops+1)
             
             
 
