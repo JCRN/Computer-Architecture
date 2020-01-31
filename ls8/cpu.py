@@ -18,7 +18,8 @@ class CPU:
             161: 'SUB',   
             162: 'MUL',
             163: 'DIV',
-            164: 'MOD', 
+            164: 'MOD',
+            167: 'CMP', 
             168: 'AND', 
             170: 'OR', 
             171: 'XOR', 
@@ -30,7 +31,10 @@ class CPU:
             69: self.push, 
             70: self.pop, 
             71: self.prn,
-            80: self.call,  
+            80: self.call,
+            84: self.jmp,
+            85: self.jeq,
+            86: self.jne,  
             130: self.ldi, 
         }
         
@@ -41,6 +45,9 @@ class CPU:
         self.reg = [0] * 8
         
         ### Internal Registers ###
+        # Flags
+        self.FL = 0
+        
         # Interrupt Mask 
         self.IM = 0
         
@@ -118,6 +125,14 @@ class CPU:
             except ZeroDivisionError:
                 print('Error: dividing by zero!')
                 self.halt() 
+                
+        elif op == 'CMP': # Compare the values in two registers
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.FL = 1
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.FL = 2
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.FL = 4
         
         elif op == 'AND':   # Bitwise-AND the values in registerA and registerB, storing the result in registerA
             self.reg[reg_a] &= self.reg[reg_b] & 0xFF
@@ -161,6 +176,21 @@ class CPU:
         self.ram[self.SP] = self.PC + 2        
         
         self.PC = self.reg[register] # set the PC to the value in the register
+        
+    def jmp(self, register):
+        self.PC = self.reg[register]
+        
+    def jeq(self, register):
+        if self.FL == 1:
+            self.PC = self.reg[register]
+        else:
+            self.PC += 2
+            
+    def jne(self, register):
+        if self.FL != 1:
+            self.PC = self.reg[register]
+        else:
+            self.PC += 2
             
     def ldi(self, register, value): # Set the value of a register to an integer
         self.reg[register] = value        
@@ -173,11 +203,11 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.PC,
-            #self.fl,
+            self.FL,
             #self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
+            self.ram_read(self.PC),
+            self.ram_read(self.PC + 1),
+            self.ram_read(self.PC + 2)
         ), end='')
 
         for i in range(8):
@@ -195,8 +225,6 @@ class CPU:
         """Run the CPU."""
 
         while not self.halt:
-            
-            # self.trace()
             
             # Instruction register (ir)
             ir = self.ram[self.PC] 
