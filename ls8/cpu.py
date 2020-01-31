@@ -7,39 +7,194 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
-
+        
+        # branchtable of instructions
+        self.branchtable = {
+            # ALU 
+            101: 'INC',
+            102: 'DEC',
+            105: 'NOT',
+            160: 'ADD',
+            161: 'SUB',   
+            162: 'MUL',
+            163: 'DIV',
+            164: 'MOD',
+            167: 'CMP', 
+            168: 'AND', 
+            170: 'OR', 
+            171: 'XOR', 
+            172: 'SHL',  
+            173: 'SHR',  
+            # Commands
+            1: self.hlt,
+            17: self.ret,
+            69: self.push, 
+            70: self.pop, 
+            71: self.prn,
+            80: self.call,
+            84: self.jmp,
+            85: self.jeq,
+            86: self.jne,  
+            130: self.ldi, 
+        }
+        
+        # Random Access Memory, 256 bytes (ram)
+        self.ram = [0] * 256
+        
+        # Registers, 8 bytes (reg)
+        self.reg = [0] * 8
+        
+        ### Internal Registers ###
+        # Flags
+        self.FL = 0
+        
+        # Interrupt Mask 
+        self.IM = 0
+        
+        # Interrupt Status 
+        self.IS = 0
+        
+        # Program Counter 
+        self.PC = 0    
+        
+        # Stack Pointer
+        self.SP = 0xF4     
+        
+        # Reserved Registers
+        self.reg[5] = self.IM # interrupt mask
+        self.reg[6] = self.IS # interrupt status
+        self.reg[7] = self.SP # stack pointer
+    
+        self.halt = False
+        
     def load(self):
         """Load a program into memory."""
+        
+        if len(sys.argv) != 2:
+            print('Usage: file.py filename', file=sys.stderr)
+            sys.exit(2)
+            
+        try:
+            address = 0
+            
+            with open(sys.argv[1]) as file:
+                for line in file:                    
+                    comment_split = line.split('#')  # Ignore comments                  
+                    instruction = comment_split[0].strip()   # Strip out whitespace                 
+                    if instruction == '':                    # Ignore blank lines
+                        continue                     
+                    self.ram_write(address, int(instruction[:8], 2))
+                    address += 1
+        
+        except FileNotFoundError:
+            print(f"{sys.argv[0]}: {filename} not found")
+            sys.exit(2)
 
-        address = 0
 
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
-
-    def alu(self, op, reg_a, reg_b):
+    def alu(self, op, reg_a, reg_b=None):
         """ALU operations."""
-
-        if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        
+        if op == 'INC':     # Increment given register by 1
+            self.reg[reg_a] += 1 & 0xFF                     
+        
+        elif op == 'DEC':   # Decrement given register by 1
+            self.reg[reg_a] -= 1 & 0xFF
+       
+        elif op == 'NOT':   # Perform a bitwise-NOT on the value in a register
+            self.reg[reg_a] =  ~self.reg[reg_a] & 0xFF
+        
+        elif op == 'ADD':   # Add the value in two registers and store the result in registerA
+            self.reg[reg_a] += self.reg[reg_b] & 0xFF
+        
+        elif op == 'SUB':   # Subtract the second register from the first, storing the result in registerA
+            self.reg[reg_a] -= self.reg[reg_b] & 0xFF
+       
+        elif op == 'MUL':   # Multiply the values in two registers together and store the result in registerA
+            self.reg[reg_a] *= self.reg[reg_b] & 0xFF
+        
+        elif op == 'DIV':   # Divide first register by the value in the second, storing the result in registerA
+            try:
+                self.reg[reg_a] /= self.reg[reg_b] & 0xFF
+            except ZeroDivisionError:
+                print('Error: dividing by zero!')
+                self.halt()
+        
+        elif op == 'MOD': # Divide the first register by the value in the second, storing the remainder in registerA
+            try:
+                self.reg[reg_a] %= self.reg[reg_b] & 0xFF
+            except ZeroDivisionError:
+                print('Error: dividing by zero!')
+                self.halt() 
+                
+        elif op == 'CMP': # Compare the values in two registers
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.FL = 1
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.FL = 2
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.FL = 4
+        
+        elif op == 'AND':   # Bitwise-AND the values in registerA and registerB, storing the result in registerA
+            self.reg[reg_a] &= self.reg[reg_b] & 0xFF
+       
+        elif op == 'OR':    # Bitwise-OR the values in registerA and registerB, storing the result in registerA
+            self.reg[reg_a] |= self.reg[reg_b] & 0xFF
+        
+        elif op == 'XOR':   # Bitwise-XOR the values in registerA and registerB, storing the result in registerA
+            self.reg[reg_a] ^= self.reg[reg_b] & 0xFF
+        
+        elif op == 'SHL':   # Shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0
+            self.reg[reg_a] <<= self.reg[reg_b] & 0xFF
+        
+        elif op == 'SHR':   # Shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0
+            self.reg[reg_a] >>= self.reg[reg_b] & 0xFF
+        
         else:
             raise Exception("Unsupported ALU operation")
+        
+    def hlt(self): # Halt the CPU (and exit the emulator) 
+        self.halt = True
+        
+    def ret(self): # Pop the value from the top of the stack and store it in the `PC`
+        self.PC = self.ram[self.SP]
+        self.SP += 1
+        
+    def push(self, register): # Push the value in given register on the stack
+        self.SP -= 1
+        self.ram[self.SP] = self.reg[register]
+        
+    def pop(self, register): # Pop the value at the top of the stack into the given register
+        self.reg[register] = self.ram[self.SP]
+        self.SP += 1        
 
+    def prn(self, register): # Print numeric value stored in the given register to console
+        print(self.reg[register])
+        
+    def call(self, register): #  Calls a subroutine (function) at the address stored in the register
+        # push return address on stack
+        self.SP -= 1
+        self.ram[self.SP] = self.PC + 2        
+        
+        self.PC = self.reg[register] # set the PC to the value in the register
+        
+    def jmp(self, register):
+        self.PC = self.reg[register]
+        
+    def jeq(self, register):
+        if self.FL == 1:
+            self.PC = self.reg[register]
+        else:
+            self.PC += 2
+            
+    def jne(self, register):
+        if self.FL != 1:
+            self.PC = self.reg[register]
+        else:
+            self.PC += 2
+            
+    def ldi(self, register, value): # Set the value of a register to an integer
+        self.reg[register] = value        
+        
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -47,19 +202,52 @@ class CPU:
         """
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
-            #self.fl,
+            self.PC,
+            self.FL,
             #self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
+            self.ram_read(self.PC),
+            self.ram_read(self.PC + 1),
+            self.ram_read(self.PC + 2)
         ), end='')
 
         for i in range(8):
             print(" %02X" % self.reg[i], end='')
 
         print()
+        
+    def ram_read(self, mar): # memory address register - contains the address that is being read or written to
+        return self.ram[mar]
+    
+    def ram_write(self, mar, mdr): # memory data register - contains the data that was read or the data to write
+        self.ram[mar] = mdr
 
     def run(self):
         """Run the CPU."""
-        pass
+
+        while not self.halt:
+            
+            # Instruction register (ir)
+            ir = self.ram[self.PC] 
+                        
+            # instruction bits            
+            alu = ir & 32 # bitmask, 32 if ALU instruction
+            instruction = self.branchtable[ir] 
+            ops = ir >> 6
+            
+            operand_a = self.ram[self.PC+1] if (ops > 0) else None
+            operand_b = self.ram[self.PC+2] if (ops > 1) else None
+            
+            if alu == 32:
+                self.alu(instruction, operand_a, operand_b)
+            elif ops == 1:
+                instruction(operand_a)
+            elif ops == 2:
+                instruction(operand_a, operand_b)
+            else:
+                instruction()
+                
+            if ir & 16 == 0:
+                self.PC += (ops+1)
+            
+            
+
